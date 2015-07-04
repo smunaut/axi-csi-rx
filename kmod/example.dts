@@ -1,0 +1,80 @@
+/dts-v1/;
+
+/include/ "zynq-parallella1.dtsi"
+
+/ {
+	amba@0 {
+
+		i2c@e0005000 {
+			compatible = "cdns,i2c-r1p10";
+			reg = <0xe0005000 0x1000>;
+			interrupts = <0 48 4>;
+			interrupt-parent = <&gic>;
+			bus-id = <0x0>;
+			clocks = <&clkc 39>;
+			clock-frequency = <400000>;
+			#address-cells = <0x1>;
+			#size-cells = <0x0>;
+
+			ov5647: ov5647@36 {
+				compatible = "omnivision,ov5647";
+				reg = <0x36>;
+
+				clock-frequency = <25000000>;
+
+				enable-gpios = <&gpio 74 0>;
+
+				port {
+					ov5647_ep: endpoint {
+						remote-endpoint = <&csi_ep>;
+						clock-lanes = <0>;
+						data-lanes = <1 2>;
+					};
+				};
+			};
+		};
+
+		csi_vdma: vdma@43000000 {
+			compatible = "xlnx,axi-vdma";
+			reg = <0x43000000 0x10000>;
+
+			xlnx,include-sg = <0x0>;
+			xlnx,num-fstores = <4>;
+
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        #dma-cells = <1>;
+
+			dma-channel@43000030 {
+				compatible = "xlnx,axi-vdma-s2mm-channel";
+				interrupts = <0 29 4>;
+				xlnx,datawidth = <64>;
+                                xlnx,genlock-mode = <0x0>;
+                                xlnx,include-dre = <0x0>;
+			};
+		};
+
+		csi@43c00000 {
+			compatible = "s47,axi-csi-rx-1.00.a";
+			reg = <0x43c00000 0x10000>;
+
+			interrupts = <0 30 4>;
+			interrupt-parent = <&gic>;
+
+			dmas = <&csi_vdma 0>;
+			dma-names = "video";
+
+			led-gpios = <&gpio 76 0>;
+
+			port {
+				csi_ep: endpoint {
+					remote-endpoint = <&ov5647_ep>;
+					clock-lanes = <0>;
+					data-lanes = <1 2>;
+				};
+			};
+		};
+
+	};
+
+};
